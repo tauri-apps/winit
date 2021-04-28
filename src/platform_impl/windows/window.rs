@@ -120,6 +120,20 @@ impl Window {
                 };
 
                 event_loop::subclass_window(win.window.0, subclass_input);
+
+                // seems like the subclass is attached after the window is visible to the user and ther is some sort of a gab
+                // and now that borderless windows are created by reacting to `WM_NCCALCSIZE` and `WM_NCHITTEST`,
+                // the border/titlebar/decorations will still be visible unless the window is resized or maximized
+                // so we increases the window size by one pixel then revert it back
+                let win_flags = win.window_state.lock().window_flags();
+                if !win_flags.contains(WindowFlags::DECORATIONS) {
+                    let original = win.inner_size();
+                    win.set_inner_size(
+                        PhysicalSize::new(original.width + 1, original.height).into(),
+                    );
+                    win.set_inner_size(original.into());
+                }
+
                 win
             })
         }
