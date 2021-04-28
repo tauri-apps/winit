@@ -1983,9 +1983,8 @@ unsafe fn public_window_callback_inner<T: 'static>(
             use {
                 winapi::shared::minwindef::TRUE,
                 winuser::{
-                    GetSystemMetrics, GetWindowRect, HTBOTTOM, HTBOTTOMLEFT, HTBOTTOMRIGHT,
-                    HTCLIENT, HTLEFT, HTNOWHERE, HTRIGHT, HTTOP, HTTOPLEFT, HTTOPRIGHT, SM_CXFRAME,
-                    SM_CXPADDEDBORDER, SM_CYFRAME,
+                    GetWindowRect, HTBOTTOM, HTBOTTOMLEFT, HTBOTTOMRIGHT, HTCLIENT, HTLEFT,
+                    HTNOWHERE, HTRIGHT, HTTOP, HTTOPLEFT, HTTOPRIGHT,
                 },
             };
 
@@ -2001,12 +2000,6 @@ unsafe fn public_window_callback_inner<T: 'static>(
                     windowsx::GET_Y_LPARAM(lparam),
                 );
 
-                // border size
-                let (bx, by) = (
-                    GetSystemMetrics(SM_CXFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER),
-                    GetSystemMetrics(SM_CYFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER),
-                );
-
                 let mut window_rect: RECT = mem::zeroed();
                 if GetWindowRect(window, <*mut _>::cast(&mut window_rect)) == TRUE {
                     const CLIENT: i32 = 0b0000;
@@ -2019,6 +2012,8 @@ unsafe fn public_window_callback_inner<T: 'static>(
                     const BOTTOMLEFT: i32 = BOTTOM | LEFT;
                     const BOTTOMRIGHT: i32 = BOTTOM | RIGHT;
 
+                    let fake_border = 5; // change this to manipulate how far inside the window, the resize can happen
+
                     let RECT {
                         left,
                         right,
@@ -2026,10 +2021,10 @@ unsafe fn public_window_callback_inner<T: 'static>(
                         top,
                     } = window_rect;
 
-                    let result = LEFT * (if cx < (left + bx) { 1 } else { 0 })
-                        | RIGHT * (if cx >= (right - bx) { 1 } else { 0 })
-                        | TOP * (if cy < (top + by) { 1 } else { 0 })
-                        | BOTTOM * (if cy >= (bottom - by) { 1 } else { 0 });
+                    let result = LEFT * (if cx < (left + fake_border) { 1 } else { 0 })
+                        | RIGHT * (if cx >= (right - fake_border) { 1 } else { 0 })
+                        | TOP * (if cy < (top + fake_border) { 1 } else { 0 })
+                        | BOTTOM * (if cy >= (bottom - fake_border) { 1 } else { 0 });
 
                     match result {
                         CLIENT => HTCLIENT,
