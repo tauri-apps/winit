@@ -35,6 +35,7 @@ use crate::{
     dpi::{PhysicalPosition, PhysicalSize, Position, Size},
     error::{ExternalError, NotSupportedError, OsError as RootOsError},
     icon::Icon,
+    menu::Menu,
     monitor::MonitorHandle as RootMonitorHandle,
     platform_impl::platform::{
         dark_mode::try_theme,
@@ -42,7 +43,7 @@ use crate::{
         drop_handler::FileDropHandler,
         event_loop::{self, EventLoopWindowTarget, DESTROY_MSG_ID},
         icon::{self, IconType},
-        monitor, util,
+        menu, monitor, util,
         window_state::{CursorFlags, SavedWindow, WindowFlags, WindowState},
         Parent, PlatformSpecificWindowBuilderAttributes, WindowId,
     },
@@ -132,6 +133,12 @@ impl Window {
             .collect::<Vec<_>>();
         unsafe {
             winuser::SetWindowTextW(self.window.0, text.as_ptr() as LPCWSTR);
+        }
+    }
+
+    pub fn set_menu(&self, new_menu: Option<Vec<Menu>>) {
+        if let Some(window_menu) = new_menu {
+            //menu::initialize(window_menu);
         }
     }
 
@@ -846,6 +853,22 @@ unsafe fn init<T: 'static>(
 
     if let Some(position) = attributes.position {
         win.set_outer_position(position);
+    }
+
+    if let Some(window_menu) = attributes.window_menu {
+        let event_loop_runner = event_loop.runner_shared.clone();
+        let window_handle = win.raw_window_handle();
+
+        let menu_handler = menu::MenuHandler::new(
+            win.window.0,
+            Box::new(move |event| {
+                if let Ok(e) = event.map_nonuser_event() {
+                    event_loop_runner.send_event(e)
+                }
+            }),
+        );
+
+        menu::initialize(window_menu, window_handle, menu_handler);
     }
 
     Ok(win)

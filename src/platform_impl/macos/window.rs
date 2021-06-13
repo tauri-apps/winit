@@ -15,12 +15,13 @@ use crate::{
     },
     error::{ExternalError, NotSupportedError, OsError as RootOsError},
     icon::Icon,
+    menu::Menu,
     monitor::{MonitorHandle as RootMonitorHandle, VideoMode as RootVideoMode},
     platform::macos::WindowExtMacOS,
     platform_impl::platform::{
         app_state::AppState,
         app_state::INTERRUPT_EVENT_LOOP_EXIT,
-        ffi,
+        ffi, menu,
         monitor::{self, MonitorHandle, VideoMode},
         util::{self, IdRef},
         view::CursorState,
@@ -239,6 +240,11 @@ fn create_window(
             if attrs.position.is_none() {
                 ns_window.center();
             }
+
+            if let Some(window_menu) = attrs.window_menu.clone() {
+                menu::initialize(window_menu);
+            }
+
             ns_window
         });
         pool.drain();
@@ -442,6 +448,12 @@ impl UnownedWindow {
     pub fn set_title(&self, title: &str) {
         unsafe {
             util::set_title_async(*self.ns_window, title.to_string());
+        }
+    }
+
+    pub fn set_menu(&self, menu: Option<Vec<Menu>>) {
+        unsafe {
+            util::set_menu_async(*self.ns_window, menu);
         }
     }
 
